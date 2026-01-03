@@ -25,8 +25,8 @@ pub const NUMUPGRADES: usize = 6;
 pub fn upgrades() -> [Upgrade; NUMUPGRADES] {[
     Upgrade::new("Petter 1", "Pets very slowly", 5, 1, 1),
     Upgrade::new("Petter 2", "Pets a little faster", 50, 10, 5),
-    Upgrade::new("Petter 3", "Pets every second!", 200, 50, 20),
+    Upgrade::new("Petter 3", "Pets pretty fast!", 200, 50, 20),
     Upgrade::new("Petter 4", "Pets at alarming speeds", 1000, 200, 100),
     Upgrade::new("Petter 5", "Too much petting...", 5000, 1000, 500),
-    Upgrade::new("Petter 6", "PETTING OVERLOAD", 10000, 5000, 2000),
+    Upgrade::new("Petter 6", "PETTING OVERLOAD", 10000, 5000, 5000),
 ]}

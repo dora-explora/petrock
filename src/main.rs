@@ -23,6 +23,7 @@ struct App {
     pets: usize, // current pets (currency)
     pps: usize, // current total pets per second
     mousepos: Position, // current position of the mouse
+    rockpos: Position, // rendered position of the rock (for clicking)
     infotext: String, // text at the bottom of the screen
     upgrades: [Upgrade; NUMUPGRADES], // every upgrade in the game
     purchases: [usize; NUMUPGRADES], // count of purchases for each upgrade
@@ -38,7 +39,8 @@ impl App {
         return App {
             pets: 0,
             pps: 0,
-            mousepos: Position { x: 0, y: 0 },
+            mousepos: Position::new(0, 0),
+            rockpos: Position::new(0, 0),
             infotext: String::from("Test!"),
             upgrades: upgrades(),
             purchases: [0; NUMUPGRADES],
@@ -125,5 +127,9 @@ impl App {
                 self.unlocked += 1;
             }
         }
+    }
+
+    fn pet(&mut self) {
+        self.pets += 1;
     }
 }
