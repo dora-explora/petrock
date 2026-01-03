@@ -19,11 +19,12 @@ impl Upgrade {
     }
 }
 
-pub const NUMUPGRADES: usize = 5;
+pub const NUMUPGRADES: usize = 6;
 pub fn upgrades() -> [Upgrade; NUMUPGRADES] {[
     Upgrade::new("Petter 1", "Pets very slowly", 5, 2),
     Upgrade::new("Petter 2", "Pets a little faster", 20, 10),
     Upgrade::new("Petter 3", "Pets every second!", 60, 40),
     Upgrade::new("Petter 4", "Pets at alarming speeds", 200, 200),
     Upgrade::new("Petter 5", "Too much petting...", 1000, 1500),
+    Upgrade::new("Petter 6", "PETTING OVERLOAD", 10000, 5000),
 ]}

@@ -1,7 +1,7 @@
 use std::io::Result;
 use ratatui::{
-    crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
-    layout::Position,
+    crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind, read},
+    layout::{Position, Rect, Size},
 };
 use crate::App;
 
@@ -29,9 +29,20 @@ impl App  {
 
     fn handle_mousevent(&mut self, event: MouseEvent) {
         self.mousepos = Position::new(event.column, event.row);
+        if event.kind == MouseEventKind::Down(MouseButton::Left) {
+            if self.size.width - self.mousepos.x <= 50 && self.mousepos.y < self.size.height * 3 / 4 {
+                self.mouseselect();
+            }
+        } else if event.kind == MouseEventKind::Down(MouseButton::Right) {
+            if self.size.width - self.mousepos.x <= 50 && self.mousepos.y < self.size.height * 3 / 4 {
+                self.mouseselect();
+                self.buy();
+            }
+        }
     }
 
     fn handle_resize(&mut self, width: u16, height: u16) {
+        self.size = Size::new(width, height);
         // if width < 100 || height < 30 {
             // panic!("Please keep the terminal size at or above 100x30"); // this is arbitrary
         // }

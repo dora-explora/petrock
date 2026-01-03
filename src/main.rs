@@ -5,7 +5,7 @@ use ratatui::{
         ExecutableCommand,
         event::{DisableMouseCapture, EnableMouseCapture},
     },
-    layout::Position,
+    layout::{Position, Size},
 };
 mod upgrades;
 use crate::upgrades::*;
@@ -14,7 +14,7 @@ mod input;
 
 fn main() -> Result<()> {
     let terminal = ratatui::init();
-    let result = App::new().run(terminal);
+    let result = App::new(terminal.size()?).run(terminal);
     ratatui::restore();
     return result;
 }
@@ -25,19 +25,21 @@ struct App {
     upgrades: [Upgrade; NUMUPGRADES], // every upgrade in the game
     purchases: [usize; NUMUPGRADES], // count of purchases for each upgrade
     unlocked: usize, // number of currently unlocked upgrades
-    selected: usize, // currently selected upgrade
+    selection: usize, // currently selected upgrade
+    size: Size, // current resolution
     running: bool, // whether or not the app is running
 }
 
 impl App {
-    fn new() -> App {
+    fn new(size: Size) -> App {
         return App {
             mousepos: Position { x: 0, y: 0 },
             infotext: String::from("Test!"),
             upgrades: upgrades(),
             purchases: [0; NUMUPGRADES],
             unlocked: 0,
-            selected: 0,
+            selection: 0,
+            size,
             running: true
         };
     }
@@ -48,8 +50,7 @@ impl App {
 
     fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         terminal.clear()?;
-        let size = terminal.size()?;
-        // if size.width < 100 || size.height < 30 {
+        // if self.size.width < 100 || self.size.height < 30 {
             // panic!("Please keep the terminal size at or above 100x30"); // this is arbitrary
         // }
         stdout().execute(EnableMouseCapture)?;
@@ -74,15 +75,15 @@ impl App {
     }
 
     fn select(&mut self, selection: usize) {
-        self.selected = selection;
-        self.infotext = self.upgrades[selection].render().to_string();
+        self.selection = selection;
+        self.infotext = self.upgrades[selection].render(self.purchases[selection]).to_string();
     }
 
     fn arrowselection(&mut self, direction: bool) {
-        let mut selection = self.selected;
+        let mut selection = self.selection;
         if self.unlocked == 0 { return; }
         if direction {
-            if self.selected == 0 { selection = self.unlocked - 1; }
+            if self.selection == 0 { selection = self.unlocked - 1; }
             else { selection -= 1; }
         } else {
             selection += 1;
@@ -91,7 +92,13 @@ impl App {
         self.select(selection);
     }
 
-    fn mouseselect(&mut self, mousepos: Position) {
+    fn mouseselect(&mut self) {
+        let selection: usize = ((self.mousepos.y - 2) / 3) as usize;
+        if selection < self.unlocked { self.select(selection); }
+    }
 
+    fn buy(&mut self) {
+        self.purchases[self.selection] += 1;
+        self.infotext = format!("{} purchased!", self.upgrades[self.selection].title)
     }
 }
