@@ -1,14 +1,16 @@
 use std::io::{Result, stdout};
 use ratatui::{
-    DefaultTerminal, Frame,
+    DefaultTerminal,
     crossterm::{
         ExecutableCommand,
-        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent}
+        event::{DisableMouseCapture, EnableMouseCapture},
     },
-    layout::{Position, Rect},
-    text::{Text},
-    widgets::{Block, BorderType, Widget}
+    layout::Position,
 };
+mod upgrades;
+use crate::upgrades::*;
+mod render;
+mod input;
 
 fn main() -> Result<()> {
     let terminal = ratatui::init();
@@ -18,14 +20,24 @@ fn main() -> Result<()> {
 }
 
 struct App {
-    mousepos: Position,
-    running: bool,
+    mousepos: Position, // current position of the mouse
+    infotext: String, // text at the bottom of the screen
+    upgrades: [Upgrade; NUMUPGRADES], // every upgrade in the game
+    purchases: [usize; NUMUPGRADES], // count of purchases for each upgrade
+    unlocked: usize, // number of currently unlocked upgrades
+    selected: usize, // currently selected upgrade
+    running: bool, // whether or not the app is running
 }
 
 impl App {
     fn new() -> App {
         return App {
             mousepos: Position { x: 0, y: 0 },
+            infotext: String::from("Test!"),
+            upgrades: upgrades(),
+            purchases: [0; NUMUPGRADES],
+            unlocked: 0,
+            selected: 0,
             running: true
         };
     }
@@ -37,9 +49,9 @@ impl App {
     fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         terminal.clear()?;
         let size = terminal.size()?;
-        if size.width < 100 || size.height < 30 {
-            panic!("Please keep the terminal size at or above 100x30"); // this is currently arbitrary
-        }
+        // if size.width < 100 || size.height < 30 {
+            // panic!("Please keep the terminal size at or above 100x30"); // this is arbitrary
+        // }
         stdout().execute(EnableMouseCapture)?;
         self.running = true;
         while self.running {
@@ -50,40 +62,36 @@ impl App {
         return Ok(())
     }
 
-    fn render(&self, frame: &mut Frame) {
-        frame.render_widget(Block::bordered(), frame.area());
-        frame.render_widget(Text::from("x"), Rect::new(self.mousepos.x, self.mousepos.y, 1, 1));
-    }
-
-    fn render_sidebar(&self) -> impl Widget {
-        return Block::bordered().border_type(BorderType::Rounded);
-    }
-
-    fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            Event::Key(event) if event.kind == KeyEventKind::Press => self.handle_keyevent(event),
-            Event::Mouse(event) => self.handle_mousevent(event),
-            Event::Resize(width, height) => self.handle_resize(width, height),
-            _ => {}
+    fn unlock(&mut self) {
+        let mut unlocked = self.unlocked;
+        unlocked += 1;
+        if unlocked > NUMUPGRADES {
+            unlocked = NUMUPGRADES;
+        } else {
+            self.infotext = format!("You've unlocked upgrade number {}: {}!\n{}", unlocked, self.upgrades[unlocked - 1].title, self.upgrades[unlocked - 1].description);
         }
-        Ok(())
+        self.unlocked = unlocked;
     }
 
-    fn handle_keyevent(&mut self, event: KeyEvent) {
-        match (event.modifiers, event.code) {
-            (_, KeyCode::Esc | KeyCode::Char('q'))
-            | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
-            _ => {}
+    fn select(&mut self, selection: usize) {
+        self.selected = selection;
+        self.infotext = self.upgrades[selection].render().to_string();
+    }
+
+    fn arrowselection(&mut self, direction: bool) {
+        let mut selection = self.selected;
+        if self.unlocked == 0 { return; }
+        if direction {
+            if self.selected == 0 { selection = self.unlocked - 1; }
+            else { selection -= 1; }
+        } else {
+            selection += 1;
+            if selection == self.unlocked { selection = 0; }
         }
+        self.select(selection);
     }
 
-    fn handle_mousevent(&mut self, event: MouseEvent) {
-        self.mousepos = Position::new(event.column, event.row);
-    }
+    fn mouseselect(&mut self, mousepos: Position) {
 
-    fn handle_resize(&mut self, width: u16, height: u16) {
-        if width < 100 || height < 30 {
-            panic!("Please keep the terminal size at or above 100x30");
-        }
     }
 }
