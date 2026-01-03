@@ -20,12 +20,15 @@ fn main() -> Result<()> {
 }
 
 struct App {
+    pets: usize, // current pets (currency)
+    pps: usize, // current total pets per second
     mousepos: Position, // current position of the mouse
     infotext: String, // text at the bottom of the screen
     upgrades: [Upgrade; NUMUPGRADES], // every upgrade in the game
     purchases: [usize; NUMUPGRADES], // count of purchases for each upgrade
     unlocked: usize, // number of currently unlocked upgrades
     selection: usize, // currently selected upgrade
+    listoffset: usize, // upgrade list item offset (as reported by ListState)
     size: Size, // current resolution
     running: bool, // whether or not the app is running
 }
@@ -33,12 +36,15 @@ struct App {
 impl App {
     fn new(size: Size) -> App {
         return App {
+            pets: 0,
+            pps: 0,
             mousepos: Position { x: 0, y: 0 },
             infotext: String::from("Test!"),
             upgrades: upgrades(),
             purchases: [0; NUMUPGRADES],
             unlocked: 0,
             selection: 0,
+            listoffset: 0,
             size,
             running: true
         };
@@ -58,6 +64,7 @@ impl App {
         while self.running {
             terminal.draw(|frame| self.render(frame))?;
             self.handle_events()?;
+            self.tick();
         }
         stdout().execute(DisableMouseCapture)?;
         return Ok(())
@@ -93,12 +100,30 @@ impl App {
     }
 
     fn mouseselect(&mut self) {
-        let selection: usize = ((self.mousepos.y - 2) / 3) as usize;
-        if selection < self.unlocked { self.select(selection); }
+        let selection: usize = ((self.mousepos.y - 2) / 4) as usize;
+        if selection + self.listoffset < self.unlocked { self.select(selection + self.listoffset); }
     }
 
     fn buy(&mut self) {
-        self.purchases[self.selection] += 1;
-        self.infotext = format!("{} purchased!", self.upgrades[self.selection].title)
+        let upgrade = self.upgrades[self.selection].clone();
+        let purchases = self.purchases[self.selection];
+        let cost = upgrade.cost + upgrade.factor * (purchases * (purchases + 1)) / 2; // thank you math class
+        if self.pets >= cost {
+            self.pets -= cost;
+            self.pps += upgrade.pps;
+            self.purchases[self.selection] += 1;
+            self.infotext = format!("{} purchased!", upgrade.title)
+        } else {
+            self.infotext = format!("You can't afford a {}!", upgrade.title);
+        }
+    }
+
+    fn tick(&mut self) {
+        self.pets += self.pps;
+        if self.unlocked < NUMUPGRADES {
+            if self.upgrades[self.unlocked].cost <= self.pets {
+                self.unlocked += 1;
+            }
+        }
     }
 }

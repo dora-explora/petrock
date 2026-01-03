@@ -1,17 +1,19 @@
-use std::io::Result;
+use std::{io::Result, time::Duration};
 use ratatui::{
-    crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind, read},
-    layout::{Position, Rect, Size},
+    crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind, poll, read},
+    layout::{Position, Size},
 };
 use crate::App;
 
 impl App  {
     pub fn handle_events(&mut self) -> Result<()> {
-        match read()? {
-            Event::Key(event) if event.kind == KeyEventKind::Press => self.handle_keyevent(event),
-            Event::Mouse(event) => self.handle_mousevent(event),
-            Event::Resize(width, height) => self.handle_resize(width, height),
-            _ => {}
+        if poll(Duration::from_millis(16))? {
+            match read()? {
+                Event::Key(event) if event.kind == KeyEventKind::Press => self.handle_keyevent(event),
+                Event::Mouse(event) => self.handle_mousevent(event),
+                Event::Resize(width, height) => self.handle_resize(width, height),
+                _ => {}
+            }
         }
         Ok(())
     }
@@ -21,8 +23,10 @@ impl App  {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
             (_, KeyCode::Char('u')) => self.unlock(),
+            (_, KeyCode::Enter) => self.buy(),
             (_, KeyCode::Up) => self.arrowselection(true),
             (_, KeyCode::Down) => self.arrowselection(false),
+            (_, KeyCode::Char(' ')) => self.pets += 1,
             _ => {}
         }
     }
