@@ -7,7 +7,7 @@ use crate::App;
 
 impl App  {
     pub fn handle_events(&mut self) -> Result<()> {
-        if poll(Duration::from_millis(16))? {
+        if poll(Duration::from_millis(32))? {
             match read()? {
                 Event::Key(event) if event.kind == KeyEventKind::Press => self.handle_keyevent(event),
                 Event::Mouse(event) => self.handle_mousevent(event),
@@ -26,7 +26,7 @@ impl App  {
             (_, KeyCode::Enter) => self.buy(),
             (_, KeyCode::Up) => self.arrowselection(true),
             (_, KeyCode::Down) => self.arrowselection(false),
-            (_, KeyCode::Char(' ')) => self.pet(),
+            (_, KeyCode::Char(' ')) => self.pet(), // this can be abused unfortunately
             _ => {}
         }
     }

@@ -1,8 +1,10 @@
+use rand::{Rng, rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Position, Rect},
     style::{Color, Style},
-    text::{Line, Text},
+    text::{Line, Span, Text},
     widgets::{Block, BorderType, List, ListState, Paragraph}
 };
 use crate::{App, upgrades::Upgrade};
@@ -21,62 +23,70 @@ const ROCK: &str = "
    └────────────────────────────┘
 ";
 
-const EYES: [&str; 9] = [
+const EYES: [&str; 10] = [
     "
- ▄▄▄▄      ▄▄▄▄
-█  ███    █  ███
-██████    ██████
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+█  ███
+██████
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-██  ██    ██  ██
-██████    ██████
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+██  ██
+██████
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-███  █    ███  █
-██████    ██████
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+███  █
+██████
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-█▀▀███    █▀▀███
-█▄▄███    █▄▄███
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+█▀▀███
+█▄▄███
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-██▀▀██    ██▀▀██
-██▄▄██    ██▄▄██
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+██▀▀██
+██▄▄██
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-███▀▀█    ███▀▀█
-███▄▄█    ███▄▄█
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+███▀▀█
+███▄▄█
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-██████    ██████
-█  ███    █  ███
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+██████
+█  ███
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-██████    ██████
-██  ██    ██  ██
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+██████
+██  ██
+ ▀▀▀▀
     ",
     "
- ▄▄▄▄      ▄▄▄▄
-██████    ██████
-███  █    ███  █
- ▀▀▀▀      ▀▀▀▀
+ ▄▄▄▄
+██████
+███  █
+ ▀▀▀▀
+    ",
+    "
+ ▄▄▄▄
+█▀  ▀█
+██████
+ ▀▀▀▀
     ",
 ];
+
+const BLUSH: &str = "▒▒▒▒";
 
 impl App {
     pub fn render(&mut self, frame: &mut Frame) {
@@ -98,25 +108,43 @@ impl App {
         frame.render_stateful_widget(sidebar, hlayout[1], &mut sidebar_state);
         self.listoffset = sidebar_state.offset();
 
-        frame.render_widget(Text::raw(format!("Pets: {}\n{} pets per second", ntostr(self.pets), ntostr(self.pps))), hlayout[0]);
+        self.render_rock(frame, hlayout[0]);
+    }
+
+    fn render_rock(&mut self, frame: &mut Frame, area: Rect) {
+        self.render_background(frame, area);
 
         let rvlayout = Layout::new(Direction::Vertical, [
             Constraint::Fill(1),
-            Constraint::Length(12),
+            Constraint::Length(14),
             Constraint::Fill(1)
-        ]).split(hlayout[0]);
+        ]).split(area);
         let rhlayout = Layout::new(Direction::Horizontal, [
             Constraint::Fill(1),
             Constraint::Length(36),
             Constraint::Fill(1)
         ]).split(rvlayout[1]);
-        frame.render_widget(Text::raw(ROCK), rhlayout[1]);
+        frame.render_widget(Text::raw(format!("Pets: {} | {}pps | {}ppc", ntostr(self.pets), ntostr(self.pps), ntostr(self.ppc))).centered(), rhlayout[1]);
+        frame.render_widget(Text::raw(ROCK), Rect::new(rhlayout[1].x, rhlayout[1].y + 1, 36, 12));
 
-        let eyerect = Rect::new(rhlayout[1].x + 9, rhlayout[1].y + 3, 16, 5);
-        let deltax: isize = self.mousepos.x as isize - (rhlayout[1].x + 17) as isize;
-        let deltay: isize = (rhlayout[1].y + 5) as isize - self.mousepos.y as isize;
-        let eye: usize =
-            if deltax*deltax/5 + deltay*deltay < 40 { 4 }
+        if self.blushing > 0 {
+            let blushrect_a = Rect::new(rhlayout[1].x + 6, rhlayout[1].y + 9, 4, 1);
+            let blushrect_b = Rect::new(rhlayout[1].x + 24, rhlayout[1].y + 9, 4, 1);
+            frame.render_widget(Text::styled(BLUSH, Color::LightMagenta), blushrect_a);
+            frame.render_widget(Text::styled(BLUSH, Color::LightMagenta), blushrect_b);
+        }
+        self.render_eye(frame, rhlayout[1].x + 9, rhlayout[1].y + 3);
+        self.render_eye(frame, rhlayout[1].x + 19, rhlayout[1].y + 3);
+
+        self.rockpos = Position::new(rhlayout[1].x + 19, rhlayout[1].y + 6);
+    }
+
+    fn render_eye(&self, frame: &mut Frame, x: u16, y: u16) {
+        let rect = Rect::new(x, y, 16, 5);
+        let deltax: isize = self.mousepos.x as isize - (x + 3) as isize;
+        let deltay: isize = (y + 2) as isize - self.mousepos.y as isize;
+        let mut eye: usize =
+            if deltax.abs() < 4 && deltay.abs() < 3 { 4 }
             else if 2*deltax <= -deltay && deltax >= -2*deltay { 0 }
             else if deltay >= 2*deltax.abs() { 1 }
             else if 2*deltax >= deltay && deltax < 2*deltay { 2 }
@@ -125,12 +153,30 @@ impl App {
             else if 2*deltax <= deltay && deltax >= 2*deltay { 6 }
             else if deltay < -2*deltax.abs() { 7 }
             else { 8 };
-        frame.render_widget(Text::raw(EYES[eye]), eyerect);
-
-        self.rockpos = Position::new(rhlayout[1].x + 19, rhlayout[1].y + 6);
+        if self.blushing > 0 { eye = 9; }
+        frame.render_widget(Text::raw(EYES[eye]), rect);
     }
 
-    fn render_sidebar(&self) -> (List, ListState) {
+    fn render_background(&mut self, frame: &mut Frame, area: Rect) {
+        let width = area.width as usize - 1;
+        let height = area.height as usize;
+        let mut bg: Vec<Vec<Span>> = vec![vec![Span::raw(" "); width]; height];
+        for i in 0..self.unlocked {
+            let mut rng = ChaCha8Rng::seed_from_u64(i as u64);
+            for _ in 0..self.purchases[i] {
+                let x = rng.random_range(0..width);
+                let y = rng.random_range(0..height);
+                bg[y][x] = Span::styled(self.upgrades[i].icon.0.clone(), self.upgrades[i].icon.1);
+            }
+        }
+        let mut lines: Vec<Line> = Vec::new();
+        for y in 0..height {
+            lines.push(Line::from(bg[y].clone()));
+        }
+        frame.render_widget(Text::from(lines), area);
+    }
+
+    fn render_sidebar(&self) -> (List<'_>, ListState) {
         let mut state = ListState::default().with_offset(self.listoffset);
         state.select(Some(self.selection));
         let mut upgradetexts: Vec<Text> = Vec::new();
@@ -145,17 +191,21 @@ impl App {
 }
 
 impl Upgrade {
-    pub fn render(&self, purchases: usize) -> Text {
+    pub fn render(&self, purchases: usize) -> Text<'_> {
         let cost = self.cost + self.factor * (purchases * (purchases + 1)) / 2;
-        let topstring: String = format!("{}: {}\nCosts {} pets, yields {} pets per second", self.title, self.description, ntostr(cost), ntostr(self.pps));
-        let mut text = Text::raw(topstring);
+
+        let mut text = Text::raw(format!("{}: ", self.title));
+        // text.push_span(Span::styled(self.icon.0.clone(), self.icon.1));
+        text.push_span(Span::raw(self.description.clone()));
+        if self.hand { text.push_line(format!("Costs {} pets, yields {} more pets per click", ntostr(cost), ntostr(self.pps))); }
+        else { text.push_line(format!("Costs {} pets, yields {} pets per second", ntostr(cost), ntostr(self.pps))); }
         text.push_line(Line::styled(format!("{} purchased", purchases), Style::new().dark_gray()));
         text.push_line(Line::raw(""));
         return text;
     }
 }
 
-const SUFFIXES: [char; 5] = ['K', 'M', 'B', 'T', 'Q'];
+const SUFFIXES: [char; 9] = ['k', 'M', 'G', 'P', 'E', 'Z', 'Y', 'R', 'Q'];
 
 fn ntostr(input: usize) -> String {
     let mut n: f64 = input as f64;
@@ -166,6 +216,6 @@ fn ntostr(input: usize) -> String {
         n /= 1000.;
         i += 1;
     }
-    if (i < 5) { return format!("{:.1}{}", n, SUFFIXES[i]); }
+    if i < 9 { return format!("{:.1}{}", n, SUFFIXES[i]); }
     else { return format!("{:.1}E{}", n, i * 3); }
 }

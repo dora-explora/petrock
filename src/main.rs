@@ -1,4 +1,7 @@
-use std::io::{Result, stdout};
+use std::{
+    io::{Result, stdout},
+    time::Instant
+};
 use ratatui::{
     DefaultTerminal,
     crossterm::{
@@ -22,8 +25,10 @@ fn main() -> Result<()> {
 struct App {
     pets: usize, // current pets (currency)
     pps: usize, // current total pets per second
+    ppc: usize, // current pets per click
     mousepos: Position, // current position of the mouse
     rockpos: Position, // rendered position of the rock (for clicking)
+    blushing: usize, // frame timer of how long rock is blushing (0 is not)
     infotext: String, // text at the bottom of the screen
     upgrades: [Upgrade; NUMUPGRADES], // every upgrade in the game
     purchases: [usize; NUMUPGRADES], // count of purchases for each upgrade
@@ -31,6 +36,7 @@ struct App {
     selection: usize, // currently selected upgrade
     listoffset: usize, // upgrade list item offset (as reported by ListState)
     size: Size, // current resolution
+    lasttick: Instant, // timestamp of last tick
     running: bool, // whether or not the app is running
 }
 
@@ -39,15 +45,18 @@ impl App {
         return App {
             pets: 0,
             pps: 0,
+            ppc: 1,
             mousepos: Position::new(0, 0),
             rockpos: Position::new(0, 0),
-            infotext: String::from("Test!"),
+            blushing: 0,
+            infotext: String::from("Hello! This is your Pet Rock, Rock! Try petting Rock!\n(Click on Rock [or press Space] to pet them)"),
             upgrades: upgrades(),
             purchases: [0; NUMUPGRADES],
             unlocked: 0,
             selection: 0,
             listoffset: 0,
             size,
+            lasttick: Instant::now(),
             running: true
         };
     }
@@ -66,7 +75,11 @@ impl App {
         while self.running {
             terminal.draw(|frame| self.render(frame))?;
             self.handle_events()?;
-            self.tick();
+            if self.lasttick.elapsed().as_millis() > 1000 {
+                self.lasttick = Instant::now();
+                self.tick();
+            }
+            if self.blushing > 0 { self.blushing -= 1; }
         }
         stdout().execute(DisableMouseCapture)?;
         return Ok(())
@@ -112,7 +125,8 @@ impl App {
         let cost = upgrade.cost + upgrade.factor * (purchases * (purchases + 1)) / 2; // thank you math class
         if self.pets >= cost {
             self.pets -= cost;
-            self.pps += upgrade.pps;
+            if upgrade.hand { self.ppc += upgrade.pps }
+            else { self.pps += upgrade.pps; }
             self.purchases[self.selection] += 1;
             self.infotext = format!("{} purchased!", upgrade.title)
         } else {
@@ -130,6 +144,19 @@ impl App {
     }
 
     fn pet(&mut self) {
-        self.pets += 1;
+        if self.pets == 0 {
+            self.infotext = String::from("Good job! Pet Rock a few more times, and you might be able to get an upgrade!")
+        } else if self.pets > 3 && self.purchases[0] == 0 {
+            self.infotext = String::from("You have enough for an upgrade! Click on it to select it, and use right click to buy it!\n(Or, use arrow keys to select and enter to buy)")
+        } else if self.purchases[0] == 1 {
+            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\nHave fun petting Rock, there may be a prize at the end for you...")
+        }
+        self.pets += self.ppc;
+        self.blushing = 15;
+        if self.unlocked < NUMUPGRADES {
+            if self.upgrades[self.unlocked].cost <= self.pets*2 {
+                self.unlocked += 1;
+            }
+        }
     }
 }
