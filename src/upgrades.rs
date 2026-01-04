@@ -26,12 +26,11 @@ impl Upgrade {
     }
 }
 
-pub const NUMUPGRADES: usize = 3;
+pub const NUMUPGRADES: usize = 5;
 pub fn upgrades() -> [Upgrade; NUMUPGRADES] {[
     Upgrade::new(false, '⌁', Color::White, "Auto-Petter", "Pets Rock for you (very slowly)", 5, 1, 1),
-    Upgrade::new(true, '☁', Color::LightBlue, "Soft Glove", "Rock appreciates your pets more!", 20, 10, 1),
+    Upgrade::new(true, '☁', Color::LightBlue, "Soft Glove", "Rock appreciates your pets more!", 25, 25, 1),
     Upgrade::new(false, '⌁', Color::LightYellow, "Better-Petter", "Pets Rock a little faster", 100, 50, 10),
-    // Upgrade::new("Petter 4", "Pets at alarming speeds", 1000, 300, 50),
-    // Upgrade::new("Petter 5", "Too much petting...", 8000, 1500, 500),
-    // Upgrade::new("Petter 6", "PETTING OVERLOAD", 50000, 10000, 5000),
+    Upgrade::new(false, '⚙', Color::Green, "Pet-o-matic", "Pets Rock at its own discretion", 1000, 500, 100),
+    Upgrade::new(true, '⑩', Color::Blue, "10 more arms", "more arm = more pet", 5000, 4000, 10)
 ]}

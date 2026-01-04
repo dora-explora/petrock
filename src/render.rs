@@ -3,7 +3,7 @@ use rand_chacha::ChaCha8Rng;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Position, Rect},
-    style::{Color, Style},
+    style::{Color, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, BorderType, List, ListState, Paragraph}
 };
@@ -94,8 +94,8 @@ impl App {
         frame.render_widget(rounded_frame, frame.area());
 
         let vlayout = Layout::new(Direction::Vertical, [
-            Constraint::Fill(1),
-            Constraint::Length(6), // height of the info text box
+            Constraint::Min(13),
+            Constraint::Max(6), // height of the info text box
         ]).split(Rect::new(1, 1, frame.area().width - 2, frame.area().height - 2));
         let info_block = Paragraph::new(self.infotext.clone()).centered().block(Block::bordered().border_type(BorderType::Rounded));
         frame.render_widget(info_block, vlayout[1]);
@@ -125,7 +125,7 @@ impl App {
             Constraint::Fill(1)
         ]).split(rvlayout[1]);
         frame.render_widget(Text::raw(format!("Pets: {} | {}pps | {}ppc", ntostr(self.pets), ntostr(self.pps), ntostr(self.ppc))).centered(), rhlayout[1]);
-        frame.render_widget(Text::raw(ROCK), Rect::new(rhlayout[1].x, rhlayout[1].y + 1, 36, 12));
+        frame.render_widget(Text::raw(ROCK).white(), Rect::new(rhlayout[1].x, rhlayout[1].y + 1, 36, 12));
 
         if self.blushing > 0 {
             let blushrect_a = Rect::new(rhlayout[1].x + 6, rhlayout[1].y + 9, 4, 1);

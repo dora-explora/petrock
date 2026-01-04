@@ -22,7 +22,6 @@ impl App  {
         match (event.modifiers, event.code) {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
-            (_, KeyCode::Char('u')) => self.unlock(),
             (_, KeyCode::Enter) => self.buy(),
             (_, KeyCode::Up) => self.arrowselection(true),
             (_, KeyCode::Down) => self.arrowselection(false),

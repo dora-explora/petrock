@@ -137,8 +137,8 @@ impl App {
     fn tick(&mut self) {
         self.pets += self.pps;
         if self.unlocked < NUMUPGRADES {
-            if self.upgrades[self.unlocked].cost <= self.pets {
-                self.unlocked += 1;
+            if self.upgrades[self.unlocked].cost <= self.pets * 2 {
+                self.unlock();
             }
         }
     }
