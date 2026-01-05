@@ -1,4 +1,4 @@
-use rand::{Rng, rng, SeedableRng};
+use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use ratatui::{
     Frame,
@@ -9,8 +9,7 @@ use ratatui::{
 };
 use crate::{App, upgrades::Upgrade};
 
-const ROCK: &str = "
-           ┌──────────┐
+const ROCK: &str = "           ┌──────────┐
        ┌───┘          └──┐
      ┌─┘                 └─┐
    ┌─┘                     └─┐
@@ -102,7 +101,7 @@ impl App {
 
         let hlayout = Layout::new(Direction::Horizontal, [
             Constraint::Fill(1),
-            Constraint::Length(50), // width of the upgrades list
+            Constraint::Length(60), // width of the upgrades list
         ]).split(vlayout[0]);
         let (sidebar, mut sidebar_state) = self.render_sidebar();
         frame.render_stateful_widget(sidebar, hlayout[1], &mut sidebar_state);
@@ -124,8 +123,8 @@ impl App {
             Constraint::Length(36),
             Constraint::Fill(1)
         ]).split(rvlayout[1]);
-        frame.render_widget(Text::raw(format!("Pets: {} | {}pps | {}ppc", ntostr(self.pets), ntostr(self.pps), ntostr(self.ppc))).centered(), rhlayout[1]);
-        frame.render_widget(Text::raw(ROCK).white(), Rect::new(rhlayout[1].x, rhlayout[1].y + 1, 36, 12));
+        frame.render_widget(Text::raw(format!("Pets: {} | {}pps | {}ppc\nTotal pets per second: {}", ntostr(self.pets), ntostr(self.pps), ntostr(self.ppc), ntostr(self.tpps))).white().centered(), rhlayout[1]);
+        frame.render_widget(Text::raw(ROCK).white(), Rect::new(rhlayout[1].x, rhlayout[1].y + 2, 36, 12));
 
         if self.blushing > 0 {
             let blushrect_a = Rect::new(rhlayout[1].x + 6, rhlayout[1].y + 9, 4, 1);
@@ -181,31 +180,39 @@ impl App {
         state.select(Some(self.selection));
         let mut upgradetexts: Vec<Text> = Vec::new();
         for i in 0..self.unlocked {
-            upgradetexts.push(self.upgrades[i].render(self.purchases[i]));
+            let upgradetext = self.upgrades[i].render(self.purchases[i]);
+            if self.pets < self.upgrades[i].cost(self.purchases[i])  {
+                upgradetexts.push(upgradetext.style(Color::DarkGray));
+            } else {
+                upgradetexts.push(upgradetext);
+            }
         }
         let list = List::new(upgradetexts)
             .block(Block::bordered().border_type(BorderType::Rounded))
-            .highlight_style(Style::new().fg(Color::Yellow));
+            .highlight_style(Style::new().bold()).highlight_symbol("> ");
         return (list, state);
     }
 }
 
 impl Upgrade {
     pub fn render(&self, purchases: usize) -> Text<'_> {
-        let cost = self.cost + self.factor * (purchases * (purchases + 1)) / 2;
-
         let mut text = Text::raw(format!("{}: ", self.title));
         // text.push_span(Span::styled(self.icon.0.clone(), self.icon.1));
         text.push_span(Span::raw(self.description.clone()));
-        if self.hand { text.push_line(format!("Costs {} pets, yields {} more pets per click", ntostr(cost), ntostr(self.pps))); }
-        else { text.push_line(format!("Costs {} pets, yields {} pets per second", ntostr(cost), ntostr(self.pps))); }
-        text.push_line(Line::styled(format!("{} purchased", purchases), Style::new().dark_gray()));
+        if self.hand {
+            text.push_line(format!("Costs {} pets, yields {} more pets per click", ntostr(self.cost(purchases)), ntostr(self.pps)));
+            text.push_line(Line::styled(format!("{} purchased - {} pets per ppc", purchases, ntostr(self.cost(purchases) / self.pps)), Style::new().green().dim()));
+        }
+        else {
+            text.push_line(format!("Costs {} pets, yields {} more pets per second", ntostr(self.cost(purchases)), ntostr(self.pps)));
+            text.push_line(Line::styled(format!("{} purchased - {} pets per pps", purchases, ntostr(self.cost(purchases) / self.pps)), Style::new().blue().dim()));
+        }
         text.push_line(Line::raw(""));
         return text;
     }
 }
 
-const SUFFIXES: [char; 9] = ['k', 'M', 'G', 'P', 'E', 'Z', 'Y', 'R', 'Q'];
+const SUFFIXES: [char; 5] = ['k', 'M', 'G', 'P', 'E'];
 
 fn ntostr(input: usize) -> String {
     let mut n: f64 = input as f64;
@@ -216,6 +223,5 @@ fn ntostr(input: usize) -> String {
         n /= 1000.;
         i += 1;
     }
-    if i < 9 { return format!("{:.1}{}", n, SUFFIXES[i]); }
-    else { return format!("{:.1}E{}", n, i * 3); }
+    return format!("{:.1}{}", n, SUFFIXES[i]);
 }

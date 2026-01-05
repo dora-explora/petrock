@@ -32,19 +32,25 @@ impl App  {
 
     fn handle_mousevent(&mut self, event: MouseEvent) {
         self.mousepos = Position::new(event.column, event.row);
-        if event.kind == MouseEventKind::Down(MouseButton::Left) {
-            if self.size.width - self.mousepos.x <= 50 && self.mousepos.y < self.size.height * 3 / 4 {
-                self.mouseselect();
-                return;
-            }
-            let deltax: isize = self.mousepos.x as isize - self.rockpos.x as isize;
-            let deltay: isize = self.mousepos.y as isize - self.rockpos.y as isize;
-            if deltax*deltax/8 + deltay*deltay < 40 { self.pet(); }
-        } else if event.kind == MouseEventKind::Down(MouseButton::Right) {
-            if self.size.width - self.mousepos.x <= 50 && self.mousepos.y < self.size.height * 3 / 4 {
-                self.mouseselect();
-                self.buy();
-            }
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height * 3 / 4 {
+                    self.mouseselect();
+                    return;
+                }
+                let deltax: isize = self.mousepos.x as isize - self.rockpos.x as isize;
+                let deltay: isize = self.mousepos.y as isize - self.rockpos.y as isize;
+                if deltax*deltax/8 + deltay*deltay < 40 { self.pet(); }
+            },
+            MouseEventKind::Down(MouseButton::Right) => {
+                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height * 3 / 4 {
+                    self.mouseselect();
+                    self.buy();
+                }
+            },
+            MouseEventKind::ScrollUp => { self.arrowselection(true); },
+            MouseEventKind::ScrollDown => { self.arrowselection(false); },
+            _ => {}
         }
     }
 

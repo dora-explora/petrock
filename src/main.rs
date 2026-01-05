@@ -37,6 +37,8 @@ struct App {
     listoffset: usize, // upgrade list item offset (as reported by ListState)
     size: Size, // current resolution
     lasttick: Instant, // timestamp of last tick
+    manualpets: usize, // total number of manual pets this second (for tpps calculation)
+    tpps: usize, // total pets per second, calculated every second
     running: bool, // whether or not the app is running
 }
 
@@ -57,6 +59,8 @@ impl App {
             listoffset: 0,
             size,
             lasttick: Instant::now(),
+            manualpets: 0,
+            tpps: 0,
             running: true
         };
     }
@@ -122,7 +126,7 @@ impl App {
     fn buy(&mut self) {
         let upgrade = self.upgrades[self.selection].clone();
         let purchases = self.purchases[self.selection];
-        let cost = upgrade.cost + upgrade.factor * (purchases * (purchases + 1)) / 2; // thank you math class
+        let cost = upgrade.cost(purchases);
         if self.pets >= cost {
             self.pets -= cost;
             if upgrade.hand { self.ppc += upgrade.pps }
@@ -132,12 +136,17 @@ impl App {
         } else {
             self.infotext = format!("You can't afford a {}!", upgrade.title);
         }
+        if self.selection == 0 && purchases == 0 {
+            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\nHave fun petting Rock, there may be a prize at the end for you...\n(btw you can press esc, q, or ctrl-c at anytime to exit)")
+        }
     }
 
     fn tick(&mut self) {
         self.pets += self.pps;
+        self.tpps = self.pps + self.manualpets;
+        self.manualpets = 0;
         if self.unlocked < NUMUPGRADES {
-            if self.upgrades[self.unlocked].cost <= self.pets * 2 {
+            if self.upgrades[self.unlocked].cost <= self.pets * 3 {
                 self.unlock();
             }
         }
@@ -148,13 +157,12 @@ impl App {
             self.infotext = String::from("Good job! Pet Rock a few more times, and you might be able to get an upgrade!")
         } else if self.pets > 3 && self.purchases[0] == 0 {
             self.infotext = String::from("You have enough for an upgrade! Click on it to select it, and use right click to buy it!\n(Or, use arrow keys to select and enter to buy)")
-        } else if self.purchases[0] == 1 {
-            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\nHave fun petting Rock, there may be a prize at the end for you...")
         }
         self.pets += self.ppc;
+        self.manualpets += self.ppc;
         self.blushing = 15;
         if self.unlocked < NUMUPGRADES {
-            if self.upgrades[self.unlocked].cost <= self.pets*2 {
+            if self.upgrades[self.unlocked].cost <= self.pets * 3 {
                 self.unlocked += 1;
             }
         }
