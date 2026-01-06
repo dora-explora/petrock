@@ -2,7 +2,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Position, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Position, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, BorderType, List, ListState, Paragraph}
@@ -89,8 +89,8 @@ const BLUSH: &str = "▒▒▒▒";
 
 impl App {
     pub fn render(&mut self, frame: &mut Frame) {
-        let rounded_frame = Block::bordered().border_type(BorderType::Rounded);
-        frame.render_widget(rounded_frame, frame.area());
+        let border = Block::bordered().border_type(BorderType::Rounded).title(" pet Rock! ").title_alignment(Alignment::Center);
+        frame.render_widget(border, frame.area());
 
         let vlayout = Layout::new(Direction::Vertical, [
             Constraint::Min(13),
@@ -212,7 +212,7 @@ impl Upgrade {
     }
 }
 
-const SUFFIXES: [char; 5] = ['k', 'M', 'G', 'P', 'E'];
+const SUFFIXES: [char; 5] = ['K', 'M', 'B', 'T', 'Q'];
 
 fn ntostr(input: usize) -> String {
     let mut n: f64 = input as f64;
@@ -223,5 +223,6 @@ fn ntostr(input: usize) -> String {
         n /= 1000.;
         i += 1;
     }
+    if n < 10. { return format!("{:.2}{}", n, SUFFIXES[i])}
     return format!("{:.1}{}", n, SUFFIXES[i]);
 }
