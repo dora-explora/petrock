@@ -55,7 +55,7 @@ struct App {
 impl App {
     fn new(size: Size, sink: Sink) -> App {
         return App {
-            pets: 0,
+            pets: 10000000,
             pps: 0,
             ppc: 1,
             mousepos: Position::new(0, 0),
