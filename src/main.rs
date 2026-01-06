@@ -1,4 +1,5 @@
 use std::{
+    fs::File,
     io::{Result, stdout},
     time::Instant
 };
@@ -10,14 +11,21 @@ use ratatui::{
     },
     layout::{Position, Size},
 };
+use rodio::{Decoder, Sink, OutputStreamBuilder, Source};
+
 mod upgrades;
 use crate::upgrades::*;
 mod render;
 mod input;
 
 fn main() -> Result<()> {
+    let mut output_stream = OutputStreamBuilder::open_default_stream().expect("Could not open default audio stream");
+    output_stream.log_on_drop(false);
+    let music_source = Decoder::try_from(File::open("./sounds/music.mp3").unwrap()).unwrap().repeat_infinite();
+    let sink = Sink::connect_new(output_stream.mixer());
+    sink.append(music_source);
     let terminal = ratatui::init();
-    let result = App::new(terminal.size()?).run(terminal);
+    let result = App::new(terminal.size()?, sink).run(terminal);
     ratatui::restore();
     return result;
 }
@@ -39,11 +47,13 @@ struct App {
     lasttick: Instant, // timestamp of last tick
     manualpets: usize, // total number of manual pets this second (for tpps calculation)
     tpps: usize, // total pets per second, calculated every second
+    sink: Sink, // music sink thingy
+    volume: f32, // volume of the music
     running: bool, // whether or not the app is running
 }
 
 impl App {
-    fn new(size: Size) -> App {
+    fn new(size: Size, sink: Sink) -> App {
         return App {
             pets: 0,
             pps: 0,
@@ -61,12 +71,15 @@ impl App {
             lasttick: Instant::now(),
             manualpets: 0,
             tpps: 0,
+            sink,
+            volume: 1.,
             running: true
         };
     }
 
     fn quit(&mut self) {
         self.running = false;
+        self.sink.stop();
     }
 
     fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
@@ -94,7 +107,7 @@ impl App {
         unlocked += 1;
         if unlocked > NUMUPGRADES {
             unlocked = NUMUPGRADES;
-        } else {
+        } else if self.pets >= 25 {
             self.infotext = format!("You've unlocked upgrade number {}: {}!\n{}", unlocked, self.upgrades[unlocked - 1].title, self.upgrades[unlocked - 1].description);
         }
         self.unlocked = unlocked;
@@ -105,7 +118,7 @@ impl App {
         self.infotext = self.upgrades[selection].render(self.purchases[selection]).to_string();
     }
 
-    fn arrowselection(&mut self, direction: bool) {
+    fn arrowselect(&mut self, direction: bool) {
         let mut selection = self.selection;
         if self.unlocked == 0 { return; }
         if direction {
@@ -137,7 +150,7 @@ impl App {
             self.infotext = format!("You can't afford a {}!", upgrade.title);
         }
         if self.selection == 0 && purchases == 0 {
-            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\nHave fun petting Rock, there may be a prize at the end for you...\n(btw you can press esc, q, or ctrl-c at anytime to exit)")
+            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press '.' and ',' to turn the music up and down and esc, q, or ctrl-c at anytime will exit)\nHave fun petting Rock!")
         }
     }
 
@@ -166,5 +179,16 @@ impl App {
                 self.unlocked += 1;
             }
         }
+    }
+
+    fn volume(&mut self, up: bool) {
+        if up {
+            self.volume += 0.1;
+            if self.volume > 1. { self.volume = 1.; }
+        } else {
+            self.volume -= 0.1;
+            if self.volume < 0. { self.volume = 0.; }
+        }
+        self.sink.set_volume(self.volume);
     }
 }

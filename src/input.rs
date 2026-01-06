@@ -23,9 +23,11 @@ impl App  {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
             (_, KeyCode::Enter) => self.buy(),
-            (_, KeyCode::Up) => self.arrowselection(true),
-            (_, KeyCode::Down) => self.arrowselection(false),
+            (_, KeyCode::Up) => self.arrowselect(true),
+            (_, KeyCode::Down) => self.arrowselect(false),
             (_, KeyCode::Char(' ')) => self.pet(), // this can be abused unfortunately
+            (_, KeyCode::Char('.')) => self.volume(true),
+            (_, KeyCode::Char(',')) => self.volume(false),
             _ => {}
         }
     }
@@ -48,8 +50,8 @@ impl App  {
                     self.buy();
                 }
             },
-            MouseEventKind::ScrollUp => { self.arrowselection(true); },
-            MouseEventKind::ScrollDown => { self.arrowselection(false); },
+            MouseEventKind::ScrollUp => { self.arrowselect(true); },
+            MouseEventKind::ScrollDown => { self.arrowselect(false); },
             _ => {}
         }
     }
