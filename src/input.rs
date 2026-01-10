@@ -36,7 +36,7 @@ impl App  {
         self.mousepos = Position::new(event.column, event.row);
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
-                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height * 3 / 4 {
+                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height - 8 {
                     self.mouseselect();
                     return;
                 }
@@ -45,13 +45,13 @@ impl App  {
                 if deltax*deltax/8 + deltay*deltay < 40 { self.pet(); }
             },
             MouseEventKind::Down(MouseButton::Right) => {
-                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height * 3 / 4 {
+                if self.size.width - self.mousepos.x <= 60 && self.mousepos.y < self.size.height - 8 {
                     self.mouseselect();
                     self.buy();
                 }
             },
-            MouseEventKind::ScrollUp => { self.arrowselect(true); },
-            MouseEventKind::ScrollDown => { self.arrowselect(false); },
+            MouseEventKind::ScrollUp => { self.scrollselect(true); },
+            MouseEventKind::ScrollDown => { self.scrollselect(false); },
             _ => {}
         }
     }

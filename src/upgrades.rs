@@ -30,7 +30,7 @@ impl Upgrade {
     }
 }
 
-pub const NUMUPGRADES: usize = 12;
+pub const NUMUPGRADES: usize = 15;
 pub fn upgrades() -> [Upgrade; NUMUPGRADES] {[
     Upgrade::new(false, '⌁', Color::White, "Auto-Petter", "Pets Rock for you (very slowly)",     5, 1, 1),
     Upgrade::new(true, '☁', Color::LightBlue, "Soft Glove", "Rock appreciates your pets more!", 25, 25, 1),
@@ -41,7 +41,10 @@ pub fn upgrades() -> [Upgrade; NUMUPGRADES] {[
     Upgrade::new(false, '⌁', Color::LightGreen, "Better-Petter-o-matic", "the companies merged", 15000, 5000, 200),
     Upgrade::new(false, '!', Color::LightRed, "Petter Overclock", "1000 Hz auto-petter",         100000, 50000, 1000),
     Upgrade::new(true, '💪', Color::Yellow, "Gym Sesh", "No pain, no gain",                      250000, 150000, 250),
-    Upgrade::new(false, '⚛', Color::Cyan, "Quantum Petter", "Superposition of 5000 pets",        1000000, 500000, 5000),
-    Upgrade::new(true, '🦾', Color::White, "Cyborg Enhancements", "You're a petting machine!",   2500000, 2000000, 2500),
-    Upgrade::new(false, '⌨', Color::Magenta, "Petting Machine", "nvm",                          15000000, 7500000, 50000),
+    Upgrade::new(false, '⚛', Color::Cyan, "Quantum Petter", "Superposition of 5000 pets",        1000000, 500000, 10000),
+    Upgrade::new(true, '🦾', Color::Gray, "Cyborg Enhancements", "You're a petting machine!",    2500000, 2000000, 2500),
+    Upgrade::new(false, '⌨', Color::Magenta, "Petting Machine", "nvm",                          15000000, 10000000, 100000),
+    Upgrade::new(true, '1', Color::White, "last hand upgrade", "hi",                             100000000, 100000000, 50000),
+    Upgrade::new(false, '2', Color::White, "last auto upgrade", "hello",                         250000000, 100000000, 500000),
+    Upgrade::new(true, '3', Color::Red, "the end?!", "the plot thicken... indubutubly.....",     1000000000, 0, 1),
 ]}

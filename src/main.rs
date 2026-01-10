@@ -1,6 +1,7 @@
 use std::{
-    fs::File,
     io::{Result, stdout},
+    sync::mpsc::{self, Sender},
+    thread,
     time::Instant
 };
 use ratatui::{
@@ -11,21 +12,19 @@ use ratatui::{
     },
     layout::{Position, Size},
 };
-use rodio::{Decoder, Sink, OutputStreamBuilder, Source};
 
 mod upgrades;
 use crate::upgrades::*;
 mod render;
 mod input;
+mod audio;
+use crate::audio::AudioUpdate;
 
 fn main() -> Result<()> {
-    let mut output_stream = OutputStreamBuilder::open_default_stream().expect("Could not open default audio stream");
-    output_stream.log_on_drop(false);
-    let music_source = Decoder::try_from(File::open("./sounds/music.mp3").unwrap()).unwrap().repeat_infinite();
-    let sink = Sink::connect_new(output_stream.mixer());
-    sink.append(music_source);
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || audio::run_audio(receiver));
     let terminal = ratatui::init();
-    let result = App::new(terminal.size()?, sink).run(terminal);
+    let result = App::new(terminal.size()?, sender).run(terminal);
     ratatui::restore();
     return result;
 }
@@ -47,15 +46,15 @@ struct App {
     lasttick: Instant, // timestamp of last tick
     manualpets: usize, // total number of manual pets this second (for tpps calculation)
     tpps: usize, // total pets per second, calculated every second
-    sink: Sink, // music sink thingy
+    sender: Sender<AudioUpdate>, // music sink thingy
     volume: f32, // volume of the music
     running: bool, // whether or not the app is running
 }
 
 impl App {
-    fn new(size: Size, sink: Sink) -> App {
+    fn new(size: Size, sender: Sender<AudioUpdate>) -> App {
         return App {
-            pets: 10000000,
+            pets: 0,
             pps: 0,
             ppc: 1,
             mousepos: Position::new(0, 0),
@@ -71,7 +70,7 @@ impl App {
             lasttick: Instant::now(),
             manualpets: 0,
             tpps: 0,
-            sink,
+            sender,
             volume: 1.,
             running: true
         };
@@ -79,7 +78,7 @@ impl App {
 
     fn quit(&mut self) {
         self.running = false;
-        self.sink.stop();
+        self.sender.send(AudioUpdate::Stop()).expect("audio update sender error (stop update)");
     }
 
     fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
@@ -131,6 +130,17 @@ impl App {
         self.select(selection);
     }
 
+    fn scrollselect(&mut self, direction: bool) {
+        let mut selection = self.selection;
+        if self.unlocked == 0 { return; }
+        if direction {
+            if self.selection != 0 { selection -= 1; }
+        } else {
+            if selection != self.unlocked - 1 { selection += 1; }
+        }
+        self.select(selection);
+    }
+
     fn mouseselect(&mut self) {
         let selection: usize = ((self.mousepos.y - 2) / 4) as usize;
         if selection + self.listoffset < self.unlocked { self.select(selection + self.listoffset); }
@@ -150,7 +160,7 @@ impl App {
             self.infotext = format!("You can't afford a {}!", upgrade.title);
         }
         if self.selection == 0 && purchases == 0 {
-            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press '.' and ',' to turn the music up and down and esc, q, or ctrl-c at anytime will exit)\nHave fun petting Rock!")
+            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press ',' and '.' to turn the music down and up and esc, q, or ctrl-c at anytime to exit)\nHave fun petting Rock!")
         }
     }
 
@@ -169,7 +179,7 @@ impl App {
         if self.pets == 0 {
             self.infotext = String::from("Good job! Pet Rock a few more times, and you might be able to get an upgrade!")
         } else if self.pets > 3 && self.purchases[0] == 0 {
-            self.infotext = String::from("You have enough for an upgrade! Click on it to select it, and use right click to buy it!\n(Or, use arrow keys to select and enter to buy)")
+            self.infotext = String::from("You have enough for an upgrade! Click or scroll to it to select it, and use right click to buy it!\n(Or, use arrow keys to select and enter to buy)")
         }
         self.pets += self.ppc;
         self.manualpets += self.ppc;
@@ -179,16 +189,17 @@ impl App {
                 self.unlocked += 1;
             }
         }
+        self.sender.send(AudioUpdate::Pet()).expect("audio update sender error (pet update)");
     }
 
     fn volume(&mut self, up: bool) {
         if up {
             self.volume += 0.1;
-            if self.volume > 1. { self.volume = 1.; }
+            if self.volume > 1. { self.volume = 2.; }
         } else {
             self.volume -= 0.1;
             if self.volume < 0. { self.volume = 0.; }
         }
-        self.sink.set_volume(self.volume);
+        self.sender.send(AudioUpdate::Volume(self.volume)).expect("audio update sender error (volume update)");
     }
 }
