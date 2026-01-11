@@ -48,6 +48,8 @@ struct App {
     tpps: usize, // total pets per second, calculated every second
     sender: Sender<AudioUpdate>, // music sink thingy
     volume: f32, // volume of the music
+    ending: bool, // whether in the ending scene
+    endstep: usize, // step of the ending scene
     running: bool, // whether or not the app is running
 }
 
@@ -72,7 +74,9 @@ impl App {
             tpps: 0,
             sender,
             volume: 1.,
-            running: true
+            ending: false,
+            endstep: 0,
+            running: true,
         };
     }
 
@@ -162,6 +166,7 @@ impl App {
         if self.selection == 0 && purchases == 0 {
             self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press ',' and '.' to turn the music down and up and esc, q, or ctrl-c at anytime to exit)\nHave fun petting Rock!")
         }
+        if self.selection == 14 { self.ending = true; }
     }
 
     fn tick(&mut self) {
@@ -173,6 +178,7 @@ impl App {
                 self.unlock();
             }
         }
+        if self.ending { self.endstep += 1; if self.endstep >= 100 { self.running = false; }}
     }
 
     fn pet(&mut self) {

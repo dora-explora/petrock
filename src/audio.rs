@@ -10,7 +10,7 @@ pub enum AudioUpdate {
 }
 
 pub fn run_audio(receiver: Receiver<AudioUpdate>) {
-    let mut volume = 1.;
+    let mut volume;
     let mut output_stream = OutputStreamBuilder::open_default_stream().expect("Could not open default audio stream");
     output_stream.log_on_drop(false);
     let music_source = Decoder::try_from(BufReader::new(File::open("./sounds/music.mp3").unwrap())).unwrap().repeat_infinite();

@@ -1,3 +1,4 @@
+use std::fs::read_to_string;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use ratatui::{
@@ -91,6 +92,16 @@ impl App {
     pub fn render(&mut self, frame: &mut Frame) {
         let border = Block::bordered().border_type(BorderType::Rounded).title(" pet Rock! ").title_alignment(Alignment::Center);
         frame.render_widget(border, frame.area());
+
+        if self.ending {
+            let elayout = Layout::new(Direction::Horizontal, [
+                Constraint::Fill(1),
+                Constraint::Length(100),
+                Constraint::Fill(1),
+            ]).split(Rect::new(1, 1, frame.area().width - 2, frame.area().height - 2));
+            frame.render_widget(self.render_scroll(), elayout[1]);
+            return;
+        }
 
         let vlayout = Layout::new(Direction::Vertical, [
             Constraint::Min(13),
@@ -192,6 +203,38 @@ impl App {
             .highlight_style(Style::new().bold()).highlight_symbol("> ");
         return (list, state);
     }
+
+    fn render_scroll(&self) -> Text<'_> {
+        let mut text = Text::from(read_to_string("./ending.txt").expect("could not read ending.txt"));
+        text.lines.truncate( match self.endstep {
+            ..3 => 2,
+            ..6 => 4,
+            6 => 8,
+            7 => 11,
+            ..10 => 14,
+            ..13 => 16,
+            ..16 => 19,
+            ..19 => 21,
+            ..27 => 47,
+            ..32 => 50,
+            ..36 => 53,
+            ..39 => 54,
+            ..45 => 57,
+            45 => 58,
+            46 => 59,
+            47 => 60,
+            ..50 => 61,
+            ..55 => 83,
+            _ => 85
+        });
+        text.lines = text.lines.split_off( match self.endstep {
+            ..19 => 0,
+            ..27 => 22,
+            ..50 => 48,
+            _ => 62
+        });
+        return text;
+    }
 }
 
 impl Upgrade {
@@ -199,7 +242,10 @@ impl Upgrade {
         let mut text = Text::raw(format!("{}: ", self.title));
         // text.push_span(Span::styled(self.icon.0.clone(), self.icon.1));
         text.push_span(Span::raw(self.description.clone()));
-        if self.hand {
+        if self.factor == 0 {
+            text.push_line(self.description.clone());
+            text.push_line(Line::styled("i don't know if you should buy this...", Style::new().red()));
+        } else if self.hand {
             text.push_line(format!("Costs {} pets, yields {} more pets per click", ntostr(self.cost(purchases)), ntostr(self.pps)));
             text.push_line(Line::styled(format!("{} purchased - {} pets per ppc", purchases, ntostr(self.cost(purchases) / self.pps)), Style::new().green().dim()));
         }
