@@ -56,7 +56,7 @@ struct App {
 impl App {
     fn new(size: Size, sender: Sender<AudioUpdate>) -> App {
         return App {
-            pets: 1000000000,
+            pets: 0,
             pps: 0,
             ppc: 1,
             mousepos: Position::new(0, 0),
