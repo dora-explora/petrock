@@ -8,7 +8,7 @@ Includes mouse support, balanced upgrades and progression, original music, sound
 
 ## Installation and Usage
 
-If you're on x64 windows or Linux, there's archives with binaries in the release page. Extract them and run them inside the folder to play.
+If you're on x64 Windows or Linux, there's archives with binaries in the release page. Extract them and run them inside the folder to play.
 
 Otherwise, clone the repository with `git`, install Rust, and run `cargo r` in a terminal in the folder to begin!
 
