@@ -56,7 +56,7 @@ struct App {
 impl App {
     fn new(size: Size, sender: Sender<AudioUpdate>) -> App {
         return App {
-            pets: 0,
+            pets: 1000000000,
             pps: 0,
             ppc: 1,
             mousepos: Position::new(0, 0),
@@ -164,9 +164,9 @@ impl App {
             self.infotext = format!("You can't afford a {}!", upgrade.title);
         }
         if self.selection == 0 && purchases == 0 {
-            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press ',' and '.' to turn the music down and up and esc, q, or ctrl-c at anytime to exit)\nHave fun petting Rock!")
+            self.infotext = String::from("Great job! With enough pets, you might be able to upgrade your auto-petters and your own petting hand!\n(btw you can press ',' and '.' to turn the audio down and up and esc, q, or ctrl-c at anytime to exit)\nHave fun petting Rock!")
         }
-        if self.selection == 14 { self.ending = true; }
+        if self.selection == 14 { self.end(); }
     }
 
     fn tick(&mut self) {
@@ -178,7 +178,7 @@ impl App {
                 self.unlock();
             }
         }
-        if self.ending { self.endstep += 1; if self.endstep >= 100 { self.running = false; }}
+        if self.ending { self.endstep += 1; if self.endstep >= 200 { self.running = false; }}
     }
 
     fn pet(&mut self) {
@@ -207,5 +207,10 @@ impl App {
             if self.volume < 0. { self.volume = 0.; }
         }
         self.sender.send(AudioUpdate::Volume(self.volume)).expect("audio update sender error (volume update)");
+    }
+
+    fn end(&mut self) {
+        self.ending = true;
+        self.sender.send(AudioUpdate::Ending()).expect("audio update sender error (ending update)");
     }
 }
